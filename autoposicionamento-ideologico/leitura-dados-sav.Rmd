@@ -7,6 +7,8 @@ output: html_document
 
 ```{r}
 #install.packages("haven")
+install.packages("dplyr")
+library(dplyr)
 library(haven)
 
 
@@ -16,4 +18,13 @@ cidades_paulistas <- read_sav("2.BD_CausalidadeReversa_PesquisasCidadesPaulistas
 
 telefone <- read_sav("3.BD_CausalidadeReversa_Telefone.sav")
 
+cidades_paulistas_clean <- cidades_paulistas %>%
+  mutate(across(where(is.character), ~ na_if(., ""))) %>%    # "" → NA
+  mutate(across(where(is.character), ~ na_if(., " "))) %>%   # " " → NA
+  mutate(across(where(is.character), ~ na_if(., "  ")))      # múltiplos espaços → NA
+
+cidades_paulistas_clean
+```
+```{r}
+nrow(cidades_paulistas_clean)
 ```
