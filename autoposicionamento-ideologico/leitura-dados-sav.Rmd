@@ -1,0 +1,19 @@
+---
+title: "leitura-dados-sav"
+output: html_document
+---
+
+# Teste de Leitura de arquivos .sav
+
+```{r}
+#install.packages("haven")
+library(haven)
+
+
+lapop_br<- read_sav("1.LAPOP_BR_2020_ECON.sav")
+
+cidades_paulistas <- read_sav("2.BD_CausalidadeReversa_PesquisasCidadesPaulistas.sav")
+
+telefone <- read_sav("3.BD_CausalidadeReversa_Telefone.sav")
+
+```
