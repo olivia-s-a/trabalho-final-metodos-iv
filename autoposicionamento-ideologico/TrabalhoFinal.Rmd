@@ -1,0 +1,121 @@
+---
+title: "Trabalho Final"
+output: html_document
+author: "Olívia Silva Amann"
+---
+
+FLP0468 Métodos Quantitativos de Pesquisa Política IV
+
+# Reprodução dos modelos de regressão do artigo "O crescimento da direita e o voto em Bolsonaro: causalidade reversa?"
+
+<br> Autores: G. Avelino; J. P. Junior; G. A. Russo <br>
+
+## Introdução
+
+<br> "O Crescimento da direita e o voto em Bolsonaro: causalidade reversa?", como o nome indica, é um artigo que busca inverter a lógica tradicionalmente estabelecida em grande parte da literatura que entende a posição ideológica autodeclarada como causa para a escolha do voto. Para os autores, uma das evidências disso é como, analisando a série histórica (Dados do Barômetro das Américas), no Brasil, não há aumento significativo do posicionamento conservador sobre temas de políticas públicas e costumes sociais, que é tão associada à direita.
+
+<br> Para confirmar suas suspeitas, os autores realizaram surveys, tanto em entrevistas face a face quanto em questionários por telefone, respectivamente Experimentos 1 e 2, totalizando 4922 respondentes, todos de cidades paulistas e realizados em 2019. Nos surveys, constavam perguntas de mapeamento do perfil sociodemográfico, avaliação de satisfação com o presidente (e ex-presidente, no Experimento 2) e escala esquerda-direita para o autoposicionamento. O tratamento utilizado foi informar, antes do posicionamento na escala, como o então presidente Bolsonaro se identificava (direita), além do posicionamento do presidente Lula ou de ambos (também no Experimento 2) enquanto um grupo controle não recebia esse estímulo.
+
+<br> Para este trabalho, reproduzirei as regressões apenas daquele que os autores chamam de "Experimento 1", ou seja, as entrevistas face a face.
+
+## Reprodução das modelagens
+
+### Carregamento de Bibliotecas
+
+```{r warning=FALSE, message=FALSE}
+library(haven)
+library(dplyr)
+library(broom)
+```
+
+### Carregamento de dados
+
+```{r}
+cidades_paulistas <- read_sav("2.BD_CausalidadeReversa_PesquisasCidadesPaulistas.sav")
+#limpeza de dados
+cidades_paulistas <- cidades_paulistas %>%
+  mutate(across(where(is.character), ~ na_if(., ""))) %>%   
+  mutate(across(where(is.character), ~ na_if(., " "))) %>%   
+  mutate(across(where(is.character), ~ na_if(., "  ")))
+
+experimento_1 <- cidades_paulistas %>%
+  select(
+    #autoposicionamento ideológico
+    right, 
+    left,
+    l1_rec,
+    l1_missing,
+    l1_nomi,
+    #avaliacao do presidente
+    m1_cat,
+    m1_recode,
+    #tratamento
+    treatment,
+    #informações sociodemográficas
+    female,
+    age,
+    educ_cat,
+    income_cat,
+    #cidade
+    city,
+    #neighborhood
+  ) %>%
+  rename(
+    answered = l1_missing,
+    l1_cat = l1_nomi,
+    l1_desc = l1_rec
+  ) %>%
+  mutate(
+    id=row_number(),
+    treatment=factor(treatment),
+    age=as.integer(age)
+  )
+```
+
+Conforme os autores indicam nos apêndices do artigo, dentre as cidades analisadas, uma delas, Santos, não foi usada no artigo, já que seus dados de avaliação do desempenho presidencial tinham categorias diferentes das demais. Portanto, é preciso retirar todas as respostas de Santos da amostra.
+
+```{r}
+unique(experimento_1$city)
+xp_1_fltr <- subset(experimento_1, city != "Santos")
+glimpse(xp_1_fltr)
+```
+
+### Regressões logísticas multivariadas
+
+<br> Antes de iniciar a regressão, é preciso determinar o grupo de referência, assim como no artigo, o grupo controle.
+
+```{r}
+xp_1_fltr <- xp_1_fltr %>%
+  mutate(
+    treatment=relevel(treatment, ref="Control")
+  )
+```
+
+#### Taxa de Respostas
+
+<br> Neste modelo, apresentado na sessão de Resultados, busca-se estabelecer uma relação de causalidade entre o tratamento e a taxa de respostas na escala de autoidentificação ideológica, independente de qual o valor dessa resposta (Esquerda, Direita ou Centro)
+
+```{r}
+modelo_1 <- glm(answered ~ treatment + city + income_cat + educ_cat + age + female,
+                     data=xp_1_fltr,
+                     family=binomial(link= "logit"))
+
+summary_md1 <- summary(modelo_1)
+
+#visualização em tabela
+tabela_taxa_resp <- as.data.frame(summary_md1$coefficients)
+tabela_taxa_resp <- round(tabela_taxa_resp, 3)
+tabela_taxa_resp <- tabela_taxa_resp[
+  c("(Intercept)", "treatment"),
+  c("Estimate", "Std. Error")
+]
+tabela_taxa_resp
+```
+
+Comparando os resultados obtidos na minha regressão com os dados apresentados na Tabela 2 do artigo, não há diferenças significantes.
+
+
+
+
+
+
