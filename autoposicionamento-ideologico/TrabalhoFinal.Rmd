@@ -26,6 +26,8 @@ FLP0468 Métodos Quantitativos de Pesquisa Política IV
 library(haven)
 library(dplyr)
 library(broom)
+#install.packages("ggplot2")
+library(ggplot2)
 ```
 
 ### Carregamento de dados
@@ -91,7 +93,7 @@ xp_1_fltr <- xp_1_fltr %>%
   )
 ```
 
-#### Taxa de Respostas
+#### Regressão Logística Multivariada da Taxa de Respostas
 
 <br> Neste modelo, apresentado na sessão de Resultados, busca-se estabelecer uma relação de causalidade entre o tratamento e a taxa de respostas na escala de autoidentificação ideológica, independente de qual o valor dessa resposta (Esquerda, Direita ou Centro)
 
@@ -112,8 +114,22 @@ tabela_taxa_resp <- tabela_taxa_resp[
 tabela_taxa_resp
 ```
 
-Comparando os resultados obtidos na minha regressão com os dados apresentados na Tabela 2 do artigo, não há diferenças significantes.
+<br> Comparando os resultados obtidos na minha regressão com os dados apresentados na Tabela 2 do artigo, não há diferenças significantes.
 
+#### Probabilidades preditas por grupo experimental
+
+<br> Para a predição de probabilidades, é necessário indicar os parâmetros. Os usados nos experimentos originais são descritos na página 604 do artigo, na nota de rodapé número 16: "No primeiro experimento, os valores dessas variáveis foram: respondente mulher de 40 anos, moradora da cidade Guarujá, com ensino superior incompleto ou mais e avaliação “regular” do presidente Bolsonaro."(Avelino; Junior; Russo, 2022, p. 604) 
+
+```{r}
+persona <- data.frame(
+  female ="Mulher",
+  age=40,
+  city='Guarujá',
+  educ_cat="Superior incompleto ou mais",
+  m1_cat=3,
+  treatment = c('Control', 'Treatment')
+)
+```
 
 
 
