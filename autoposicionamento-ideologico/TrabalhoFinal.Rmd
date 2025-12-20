@@ -93,9 +93,11 @@ xp_1_fltr <- xp_1_fltr %>%
   )
 ```
 
-#### Regressão Logística Multivariada da Taxa de Respostas
+#### Taxa de Respostas
 
-<br> Neste modelo, apresentado na sessão de Resultados, busca-se estabelecer uma relação de causalidade entre o tratamento e a taxa de respostas na escala de autoidentificação ideológica, independente de qual o valor dessa resposta (Esquerda, Direita ou Centro)
+<br> A Taxa de Respostas foi uma das formas que os autores utilizaram para identificar a influência do tratamento para que o respondente se identifique na escala ideológica. O objetivo é fundamentar a hipótese de que reconhecer o Bolsonaro como sendo de direita, impulsiona reações, mesmo que opostas.
+
+<br> Este modelo, chamado aqui de `modelo_1a`, é uma regressão logística multivariada, é   apresentado na sessão de Resultados e busca  estabelecer uma relação de causalidade entre o tratamento e a taxa de respostas na escala de autoidentificação ideológica, independente de qual o valor dessa resposta (Esquerda, Direita ou Centro).
 
 ```{r}
 modelo_1 <- glm(answered ~ treatment + city + income_cat + educ_cat + age + female,
@@ -105,33 +107,86 @@ modelo_1 <- glm(answered ~ treatment + city + income_cat + educ_cat + age + fema
 summary_md1 <- summary(modelo_1)
 
 #visualização em tabela
-tabela_taxa_resp <- as.data.frame(summary_md1$coefficients)
-tabela_taxa_resp <- round(tabela_taxa_resp, 3)
-tabela_taxa_resp <- tabela_taxa_resp[
+summary_md1a<- as.data.frame(summary_md1$coefficients)
+summary_md1a <- round(summary_md1a, 3)
+tabela_taxa_resp <- summary_md1a[
   c("(Intercept)", "treatment"),
   c("Estimate", "Std. Error")
 ]
 tabela_taxa_resp
 ```
+<br> Segundo a tabela 23, no Apêndice G - Análise de Regressão - Taxa de Resposta, a renda não aparece entre as variáveis independentes do modelo. Essa é a razão da diferença entre os meus resultados da taxa de resposta para os presentes no artigo. Isso poderia indicar um viés, mas como podemos perceber, tanto pela regressão acima quanto pela predição abaixo, as diferenças entre ambas as respostas não são significativas:
 
-<br> Comparando os resultados obtidos na minha regressão com os dados apresentados na Tabela 2 do artigo, não há diferenças significantes.
-
-#### Probabilidades preditas por grupo experimental
-
-<br> Para a predição de probabilidades, é necessário indicar os parâmetros. Os usados nos experimentos originais são descritos na página 604 do artigo, na nota de rodapé número 16: "No primeiro experimento, os valores dessas variáveis foram: respondente mulher de 40 anos, moradora da cidade Guarujá, com ensino superior incompleto ou mais e avaliação “regular” do presidente Bolsonaro."(Avelino; Junior; Russo, 2022, p. 604) 
+<br> Para a predição de probabilidades, é necessário indicar os parâmetros de referência. Nos experimentos originais foram usados como padrão uma "mulher de 40 anos, moradora da cidade Guarujá, com ensino superior incompleto ou mais e avaliação “regular” do presidente Bolsonaro"(Avelino; Junior; Russo, 2022, p. 604). Contudo, os autores não indicaram qual o nível de renda parametrizado, mas seguindo a mesma lógica, podemos assumir que seria a renda com maior frequência, de Até 2 SM, como indicado no Apêndice C- Estatísticas Descritivas e Frequências do Estudo 1.
 
 ```{r}
+moda_renda <- unique(
+  xp_1_fltr$income_cat
+  )[
+    which.max(tabulate(match(
+      xp_1_fltr,
+      unique(xp_1_fltr$income_cat)
+    )))
+  ]
+moda_renda
+
 persona <- data.frame(
-  female ="Mulher",
-  age=40,
-  city='Guarujá',
-  educ_cat="Superior incompleto ou mais",
-  m1_cat=3,
-  treatment = c('Control', 'Treatment')
+  female = rep('Mulher',2),
+  age=rep(40,2),
+  city=rep('Guarujá', 2),
+  educ_cat=rep('Superior incompleto ou mais', 2),
+  m1_cat=rep(3, 2),
+  treatment = c('Control', 'Treatment'),
+  income_cat = rep(moda_renda, 2)
 )
+
+pred_respondeu <- predict(
+  modelo_1,
+  newdata=persona,
+  type="response"
+)
+
+pred_respondeu
 ```
+<br> Para reproduzir os resultados originais do estudo e confirmar que a omissão da renda não gera um viés, vou reproduzi-los abaixo e gerar a Tabela x: Comparação entre modelos com e sem renda.
+
+```{r}
+modelo_1b <- glm(
+  answered ~ treatment + city + educ_cat + age + female,
+  data=xp_1_fltr,
+  family=binomial(link= "logit"))
+
+summary_md1b <- summary(modelo_1b)
 
 
+persona$income_cat<- NULL
+
+pred_md_1b <- predict(
+  modelo_1b,
+  newdata=persona,
+  type="response"
+)
+
+pred_respondeu
+
+```
+<br> Para comparar os resultados:
+```{r}
+summary_md1b <-as.data.frame(summary_md1b$coefficients)
+summary_md1b <- round(summary_md1b, 3)
+
+tabela_comp_taxa_resp <- rbind(
+  "Controle – Sem renda" = summary_md1b["(Intercept)", c("Estimate", "Std. Error")],
+  "Tratamento – Sem renda" = summary_md1b["treatment", c("Estimate", "Std. Error")],
+  "Controle – Com renda" = summary_md1a["(Intercept)", c("Estimate", "Std. Error")],
+  "Tratamento – Com renda" = summary_md1a["treatment", c("Estimate", "Std. Error")]
+)
+
+
+knitr::kable(tabela_comp_taxa_resp,
+             caption = "Tabela x: Comparação entre estimandos e erros quadrados para os modelos com e sem renda")
+```
+<br> Apesar de os valores da minha reprodução serem diferentes aos do artigo, isso provavelmente se deve à adoção de alguma forma diferente para tratar os dados. Apesar disso, são valores que estão dentro da taxa de erros estabelecida no artigo. De forma parecida, a diferença entre os modelos com e sem renda também não é estatisticamente significativa, justificando a decisão dos persquisadores de não a utilizarem na regressão.
 
 
 
