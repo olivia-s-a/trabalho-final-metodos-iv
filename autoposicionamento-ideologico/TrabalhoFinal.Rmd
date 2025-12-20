@@ -1,7 +1,9 @@
 ---
 title: "Trabalho Final"
-output: html_document
 author: "Olívia Silva Amann"
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 FLP0468 Métodos Quantitativos de Pesquisa Política IV
@@ -28,6 +30,8 @@ library(dplyr)
 library(broom)
 #install.packages("ggplot2")
 library(ggplot2)
+#install.packages("patchwork")
+library(patchwork)
 ```
 
 ### Carregamento de dados
@@ -82,7 +86,7 @@ xp_1_fltr <- subset(experimento_1, city != "Santos")
 glimpse(xp_1_fltr)
 ```
 
-### Regressões logísticas multivariadas
+### Taxa de Respostas
 
 <br> Antes de iniciar a regressão, é preciso determinar o grupo de referência, assim como no artigo, o grupo controle.
 
@@ -93,14 +97,14 @@ xp_1_fltr <- xp_1_fltr %>%
   )
 ```
 
-#### Taxa de Respostas
+#### Usando renda como variável
 
 <br> A Taxa de Respostas foi uma das formas que os autores utilizaram para identificar a influência do tratamento para que o respondente se identifique na escala ideológica. O objetivo é fundamentar a hipótese de que reconhecer o Bolsonaro como sendo de direita, impulsiona reações, mesmo que opostas.
 
 <br> Este modelo, chamado aqui de `modelo_1a`, é uma regressão logística multivariada, é   apresentado na sessão de Resultados e busca  estabelecer uma relação de causalidade entre o tratamento e a taxa de respostas na escala de autoidentificação ideológica, independente de qual o valor dessa resposta (Esquerda, Direita ou Centro).
 
 ```{r}
-modelo_1 <- glm(answered ~ treatment + city + income_cat + educ_cat + age + female,
+modelo_1 <- glm(answered ~ treatment + city + income_cat + educ_cat + age + female + m1_cat,
                      data=xp_1_fltr,
                      family=binomial(link= "logit"))
 
@@ -110,7 +114,7 @@ summary_md1 <- summary(modelo_1)
 summary_md1a<- as.data.frame(summary_md1$coefficients)
 summary_md1a <- round(summary_md1a, 3)
 tabela_taxa_resp <- summary_md1a[
-  c("(Intercept)", "treatment"),
+  c("(Intercept)", "treatmentTreatment"),
   c("Estimate", "Std. Error")
 ]
 tabela_taxa_resp
@@ -120,15 +124,12 @@ tabela_taxa_resp
 <br> Para a predição de probabilidades, é necessário indicar os parâmetros de referência. Nos experimentos originais foram usados como padrão uma "mulher de 40 anos, moradora da cidade Guarujá, com ensino superior incompleto ou mais e avaliação “regular” do presidente Bolsonaro"(Avelino; Junior; Russo, 2022, p. 604). Contudo, os autores não indicaram qual o nível de renda parametrizado, mas seguindo a mesma lógica, podemos assumir que seria a renda com maior frequência, de Até 2 SM, como indicado no Apêndice C- Estatísticas Descritivas e Frequências do Estudo 1.
 
 ```{r}
-moda_renda <- unique(
-  xp_1_fltr$income_cat
-  )[
-    which.max(tabulate(match(
-      xp_1_fltr,
-      unique(xp_1_fltr$income_cat)
-    )))
-  ]
-moda_renda
+moda_renda <- names(
+  sort(
+    table(xp_1_fltr$income_cat),
+    decreasing = TRUE
+  )
+)[1]
 
 persona <- data.frame(
   female = rep('Mulher',2),
@@ -143,16 +144,18 @@ persona <- data.frame(
 pred_respondeu <- predict(
   modelo_1,
   newdata=persona,
-  type="response"
+  type="response",
+  se.fit = TRUE
 )
 
 pred_respondeu
 ```
+### Sem Renda entre as variáveis
 <br> Para reproduzir os resultados originais do estudo e confirmar que a omissão da renda não gera um viés, vou reproduzi-los abaixo e gerar a Tabela x: Comparação entre modelos com e sem renda.
 
 ```{r}
 modelo_1b <- glm(
-  answered ~ treatment + city + educ_cat + age + female,
+  answered ~ treatment + city + educ_cat + age + female + m1_cat,
   data=xp_1_fltr,
   family=binomial(link= "logit"))
 
@@ -164,29 +167,128 @@ persona$income_cat<- NULL
 pred_md_1b <- predict(
   modelo_1b,
   newdata=persona,
-  type="response"
+  type="response",
+  se.fit=TRUE,
 )
 
-pred_respondeu
-
 ```
+#### Comparação de Resultados
 <br> Para comparar os resultados:
 ```{r}
 summary_md1b <-as.data.frame(summary_md1b$coefficients)
 summary_md1b <- round(summary_md1b, 3)
 
+summary_md1a$Signif<-cut(
+  summary_md1a$`Pr(>|z|)`,
+  breaks = c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
+  labels=c("***", "**", "*", ".", "")
+)
+summary_md1b$Signif<-cut(
+  summary_md1b$`Pr(>|z|)`,
+  breaks = c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
+  labels=c("***", "**", "*", ".", "")
+)
+
 tabela_comp_taxa_resp <- rbind(
-  "Controle – Sem renda" = summary_md1b["(Intercept)", c("Estimate", "Std. Error")],
-  "Tratamento – Sem renda" = summary_md1b["treatment", c("Estimate", "Std. Error")],
-  "Controle – Com renda" = summary_md1a["(Intercept)", c("Estimate", "Std. Error")],
-  "Tratamento – Com renda" = summary_md1a["treatment", c("Estimate", "Std. Error")]
+  "Controle – Sem renda" = summary_md1b["(Intercept)", c("Estimate", "Std. Error", "Signif")],
+  "Tratamento – Sem renda" = summary_md1b["treatmentTreatment", c("Estimate", "Std. Error", "Signif")],
+  "Controle – Com renda" = summary_md1a["(Intercept)", c("Estimate", "Std. Error", "Signif")],
+  "Tratamento – Com renda" = summary_md1a["treatmentTreatment", c("Estimate", "Std. Error", "Signif")]
 )
 
 
 knitr::kable(tabela_comp_taxa_resp,
              caption = "Tabela x: Comparação entre estimandos e erros quadrados para os modelos com e sem renda")
 ```
-<br> Apesar de os valores da minha reprodução serem diferentes aos do artigo, isso provavelmente se deve à adoção de alguma forma diferente para tratar os dados. Apesar disso, são valores que estão dentro da taxa de erros estabelecida no artigo. De forma parecida, a diferença entre os modelos com e sem renda também não é estatisticamente significativa, justificando a decisão dos persquisadores de não a utilizarem na regressão.
+<br> Apesar de os valores da minha reprodução serem diferentes aos do artigo, isso provavelmente se deve à adoção de alguma forma diferente para tratar os dados. Apesar disso, são valores que estão dentro da taxa de erros estabelecida no artigo. De forma parecida, a diferença entre os modelos com e sem renda também não é estatisticamente significativa, justificando a decisão dos persquisadores de não a utilizarem na regressão. Também é possível observar que nos quatro casos há alta significância, com um p valor inferior a 0.001.
+
+### Representação gráfica
+
+```{r}
+#calcular intervalo das predições
+ic_1a <- data.frame(
+  Condicao = c("Controle", "Tratamento"),
+  Porcentagem = pred_respondeu$fit * 100,
+  Inferior = (pred_respondeu$fit - 1.96 * pred_respondeu$se.fit) * 100,
+  Superior = (pred_respondeu$fit + 1.96 * pred_respondeu$se.fit) * 100
+)
+
+ic_1b <- data.frame(
+  Condicao = c("Controle", "Tratamento"),
+  Porcentagem = pred_md_1b$fit * 100,
+  Inferior = (pred_md_1b$fit - 1.96 * pred_md_1b$se.fit) * 100,
+  Superior = (pred_md_1b$fit + 1.96 * pred_md_1b$se.fit) * 100
+)
+
+#gráfico
+
+g1a <- ggplot() +
+  geom_point(
+    data = ic_1a,
+    aes(x = Condicao, y = Porcentagem),
+    size = 3
+  ) +
+  geom_errorbar(
+    data = ic_1a,
+    aes(x = Condicao, ymin = Inferior, ymax = Superior),
+    width = 0.2
+  ) +
+  labs(
+    x = "Condição",
+    y = "Porcentagem (%)",
+    title = "Modelo com Renda"
+  )
+
+g1b <- ggplot() +
+  geom_point(
+    data = ic_1b,
+    aes(x = Condicao, y = Porcentagem),
+    size = 3
+  ) +
+  geom_errorbar(
+    data = ic_1b,
+    aes(x = Condicao, ymin = Inferior, ymax = Superior),
+    width = 0.2
+  ) +
+  labs(
+    x = "Condição",
+    y = "Porcentagem (%)",
+    title = "Modelo sem Renda"
+  )
+
+g1a+g1b
+```
+
+### Teste de Balanço
+
+<br> Para garantir que a distribuição do tratamento seja mesmo aleatoriamente distribuída e que não tenha um viés, realizaremos um teste de balanço, que busca demonstrar se há ou não um padrão dentre os grupos controle e tratamento. Os resultados dos testes de balanço originais, podem ser encontrados no Apêndice E - Teste de balanço do estudo 1, na página 14 dos apêndices.
+  Percebe-se que nos testes de balanço originais, a avaliação do presidente não consta, mas acredito que, mesmo não sendo uma variável sociodemografica, é uma variável que pode influenciar fortemente, caso não esteja aleatoriamente distribuído entre grupos controle e tratamento, talvez não tanto para a regressão presente neste trabalho, mas especialmente nas que consideram a o posicionamento dos respondentes na escala esquerda-direita
+```{r}
+teste_balanco <- glm(
+  treatment ~ city + income_cat + educ_cat + age + female + m1_cat,
+  data=xp_1_fltr,
+  family = binomial(link="logit")
+)
+
+balance_summary <- summary(teste_balanco)
+balance_summary <-as.data.frame(balance_summary$coefficients)
+balance_summary <- round(balance_summary, 3)
+balance_summary$Signif<-cut(
+  balance_summary$`Pr(>|z|)`,
+  breaks = c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
+  labels=c("***", "**", "*", ".", "(não significante)")
+)
+
+balance_tabela <- balance_summary[
+  ,
+  
+  c("Estimate", "Std. Error", "Signif")
+]
+
+knitr::kable(balance_tabela,
+             caption = "Tabela x+1: Teste de Balanço")
+```
+<br> Como idicado na tabela, nenhuma das variáveis têm significância, de forma que tenhamos, nem mesmo a categoria adicionada, que não acontece originalmente no apêndice do trabalho, a m1_cat, onde está armazenada as informações de avalaiação do então presidente Bolsonaro. Sendo assim, o teste de balanço demonstra que não há viés, ou padrão na distribuição das variaveis independentes entre os grupos controle e tratamento.
 
 
 
