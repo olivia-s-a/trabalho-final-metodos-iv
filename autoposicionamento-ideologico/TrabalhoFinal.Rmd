@@ -2,27 +2,36 @@
 title: "Trabalho Final"
 author: "Olívia Silva Amann"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 FLP0468 Métodos Quantitativos de Pesquisa Política IV
 
-# Reprodução dos modelos de regressão do artigo "O crescimento da direita e o voto em Bolsonaro: causalidade reversa?"
+# A Taxa de Resposta em "O crescimento da direita e o voto em Bolsonaro: causalidade reversa?"
 
-<br> Autores: G. Avelino; J. P. Junior; G. A. Russo <br>
+<br> Autores: G. Avelino; J. P. Junior; G. A. Russo 
+
+<br> Repositório Git Hub: https://github.com/olivia-s-a/trabalho-final-metodos-iv.git
+
+<br> 
 
 ## Introdução
+<br> "O Crescimento da direita e o voto em Bolsonaro: causalidade reversa?", é um artigo de 2022, que utiliza de surveys, análises bibliográficas, de séries históricas e estatísticas como explorar a relação entre o crescimento de uma posição ideológica e a decisão do voto em candidatos da tal posição (no caso, a direita e Bolsonaro, respectivamente). Tradicionalmente, a literatura tende a tratar essa relação como uma relação de causalidade em que a posição ideológica precede a escolha do candidato. Contudo,  como o nome do artigo indica, eles propõem uma relação de "causalidade reversa", ou seja, na qual é a identificação com o candidato escolhido, que leva a pessoa a se considerar de mesma posição que ele. Ou mesmo o oposto, a partir do candidato detestado, se posicionar contrariamente, mas em ambos os casos a relação precedente é a forma a percepação sobre o candidato afeta o posicionamento ideológico, não o contrário.
 
-<br> "O Crescimento da direita e o voto em Bolsonaro: causalidade reversa?", como o nome indica, é um artigo que busca inverter a lógica tradicionalmente estabelecida em grande parte da literatura que entende a posição ideológica autodeclarada como causa para a escolha do voto. Para os autores, uma das evidências disso é como, analisando a série histórica (Dados do Barômetro das Américas), no Brasil, não há aumento significativo do posicionamento conservador sobre temas de políticas públicas e costumes sociais, que é tão associada à direita.
+<br> Os autores fundamentam sua hipótese com, por exemplo, uma série histórica, com dados advindos do Barômetro das Américas, onde exploram se houve aumento de opiniões conservadoras no Brasil, posição historicamente associadas à direita, a partir das questões dos direitos de pessoas homossexuais e a continuidade do programa Bolsa Família. O esperado era que o aumento da direita fosse associado o aumento de posicionamento conservador, sendo esses preceitos ideológicos os responsáveis pelo posicionamento ideológico da maioria da população, mas não foi isso que se observou. Para confirmar suas hipóteses, contudo, os autores realizaram seu próprio experimento: aplicação de surveys, cara a cara e por telefone, com  pessoas escolhidas aleatoriamente. Os surveys continham informações socioeconômicas, pedidos de avaliação do presidente (então, Bolsonaro) e/ou do ex-presidente Lula, e uma escala onde o respondente poderia se posicionar como de esquerda, direita ou centro.  Com 4922 respondetes, todos de cidades paulistas, o experimento realizado em 2019 dividia-os, também aleatoriamente, entre grupo controle. Nos grupos tratamento, antes de responderem sobre seu posicionamento ideológico, os respondentes recebiam a informação da posição ideológica com a qual o presidente se identifica.
 
-<br> Para confirmar suas suspeitas, os autores realizaram surveys, tanto em entrevistas face a face quanto em questionários por telefone, respectivamente Experimentos 1 e 2, totalizando 4922 respondentes, todos de cidades paulistas e realizados em 2019. Nos surveys, constavam perguntas de mapeamento do perfil sociodemográfico, avaliação de satisfação com o presidente (e ex-presidente, no Experimento 2) e escala esquerda-direita para o autoposicionamento. O tratamento utilizado foi informar, antes do posicionamento na escala, como o então presidente Bolsonaro se identificava (direita), além do posicionamento do presidente Lula ou de ambos (também no Experimento 2) enquanto um grupo controle não recebia esse estímulo.
+<br> Os surveys aplicados cara a cara e por telefone foram, respectivamente, chamados de experimentos 1 e 2 ao longo do trabalho, e continham mais diferenças além desta. Aqui utilizaremos apenas o Experimento 1, cara a cara, que não pedia a avaliação de Lula e nem fornecia suas informações de posicionamento ideológico, apenas mencionava Bolsonaro.
 
-<br> Para este trabalho, reproduzirei as regressões apenas daquele que os autores chamam de "Experimento 1", ou seja, as entrevistas face a face.
+<br> O artigo e os dados colhidos permitem uma série de análises interessantes, como as relações entre a avaliação de Bolsonaro e o posicionamento na escala esquerda-direita; o tratamento e o posicionamento na escala esquerda-direita; ou mesmo o tratamento e a escolha de se autodeclarar na escala ou não. Para este trabalho, essa última relação foi a escolhida, e a chamamos de Taxa de Respostas.
+<br> 
 
-## Reprodução das modelagens
+## Taxa de Respostas
 
-### Carregamento de Bibliotecas
+<br> A Taxa de Respostas é usada no artigo para avaliar se há influência do tratamento (informar o posicionamento ideológico de Bolsonaro) em estimular as pessoas se autoidentificarem na escala, idependente de para qual lado, direita, esquerda, ou mesmo centro. Essa escolha se dá pela hipótese dos autores de que as pessoas estejam mais propícias a se autodeclarar na escala, em reação a seus sentimentos com relação ao Bolsonaro, sejam eles positivos ou negativos. Essa decisão porém, talvez pudesse ser mais refinada se os autores tivessem optado por unir as pessoas que não responderam àquelas que se identificaram como de centro. Como fica subentendido que esta não foi a decisão dos autores, minha reprodução será focada apenas naqueles que não responderam à identificação.
+<br>
+
+### Preparação do Ambiente e dos Dados
 
 ```{r warning=FALSE, message=FALSE}
 library(haven)
@@ -33,8 +42,7 @@ library(ggplot2)
 #install.packages("patchwork")
 library(patchwork)
 ```
-
-### Carregamento de dados
+<br> Para uma melhor compreensão dos códigos, indicarei com um comentário à frente de cada variável, a que ela se refere:
 
 ```{r}
 cidades_paulistas <- read_sav("2.BD_CausalidadeReversa_PesquisasCidadesPaulistas.sav")
@@ -47,24 +55,23 @@ cidades_paulistas <- cidades_paulistas %>%
 experimento_1 <- cidades_paulistas %>%
   select(
     #autoposicionamento ideológico
-    right, 
-    left,
-    l1_rec,
-    l1_missing,
-    l1_nomi,
+    right, #é de direita? 
+    left, #é de esquerda?
+    l1_rec, #é de direita, esquerda ou centro?
+    l1_missing, #se autoposicionou na escala?
+    l1_nomi, #qual valor se encontra na escala esquerda-direita?
     #avaliacao do presidente
-    m1_cat,
-    m1_recode,
+    m1_cat, #qual valor numérico atribui a avaliação do presidente
+    m1_recode, # descrição verbal da avaliação
     #tratamento
-    treatment,
+    treatment, #é do grupo Tratamento ou Controle?
     #informações sociodemográficas
-    female,
-    age,
-    educ_cat,
-    income_cat,
+    female, #sexo ou gênero
+    age, # idade
+    educ_cat, # nível de escolaridade
+    income_cat, #renda
     #cidade
-    city,
-    #neighborhood
+    city, # cidade
   ) %>%
   rename(
     answered = l1_missing,
@@ -77,17 +84,12 @@ experimento_1 <- cidades_paulistas %>%
     age=as.integer(age)
   )
 ```
-
-Conforme os autores indicam nos apêndices do artigo, dentre as cidades analisadas, uma delas, Santos, não foi usada no artigo, já que seus dados de avaliação do desempenho presidencial tinham categorias diferentes das demais. Portanto, é preciso retirar todas as respostas de Santos da amostra.
-
+<br> Conforme os autores indicam nos apêndices do artigo, uma das cidades pesquisadas foi Santos. Contudo, por ter categorias divergentes para a avaliação do desempenho presidencial, ela não foi utilizada para as análises junto de outras cidades. Da mesma forma, retirá-la-emos da amostra:
 ```{r}
 unique(experimento_1$city)
 xp_1_fltr <- subset(experimento_1, city != "Santos")
 glimpse(xp_1_fltr)
 ```
-
-### Taxa de Respostas
-
 <br> Antes de iniciar a regressão, é preciso determinar o grupo de referência, assim como no artigo, o grupo controle.
 
 ```{r}
@@ -97,62 +99,38 @@ xp_1_fltr <- xp_1_fltr %>%
   )
 ```
 
-#### Usando renda como variável
+<br> 
 
-<br> A Taxa de Respostas foi uma das formas que os autores utilizaram para identificar a influência do tratamento para que o respondente se identifique na escala ideológica. O objetivo é fundamentar a hipótese de que reconhecer o Bolsonaro como sendo de direita, impulsiona reações, mesmo que opostas.
+### A variável independente renda
 
-<br> Este modelo, chamado aqui de `modelo_1a`, é uma regressão logística multivariada, é   apresentado na sessão de Resultados e busca  estabelecer uma relação de causalidade entre o tratamento e a taxa de respostas na escala de autoidentificação ideológica, independente de qual o valor dessa resposta (Esquerda, Direita ou Centro).
+<br> A Taxa de Respostas realizada pelos autores é uma regressão logística multivariada que reproduziremos aqui. Contudo, não há clareza sobre o uso ou não da renda como variável independente nessa modelagem. Ao descrever a modelagem realizada para Santos, no "Apêndice G - Análises de Regressão - Taxa de Resposta" (Avelino; Junior; Russo, 2022B, p.17), não há a inclusão da variável renda e, portanto, assumiu-se que não teria sido incluída para as demais modelagens também. Dessa forma, apenas realizamos as checagens de pressupostos, posteriores, tendo o modelo sem renda como referência. 
+
+<br> A exclusão dessa variável, provavelmente, se justifica pela observação dos autores de que seria insignificante adicioná-la ao modelo. Portanto, para confirmar se há ou não significância nas diferenças entre o uso ou não da renda, realizamos aquele que foi chamado de `modelo_1a`, uma regressão que tem a renda (`income_cat`) entre as variáveis independentes:
 
 ```{r}
-modelo_1 <- glm(answered ~ treatment + city + income_cat + educ_cat + age + female + m1_cat,
+modelo_1a <- glm(answered ~ treatment + city + income_cat + educ_cat + age + female + m1_cat,
                      data=xp_1_fltr,
                      family=binomial(link= "logit"))
 
-summary_md1 <- summary(modelo_1)
+summary_md1a <- summary(modelo_1a)
 
 #visualização em tabela
-summary_md1a<- as.data.frame(summary_md1$coefficients)
+summary_md1a<- as.data.frame(summary_md1a$coefficients)
 summary_md1a <- round(summary_md1a, 3)
-tabela_taxa_resp <- summary_md1a[
+tabela_md1a <- summary_md1a[
   c("(Intercept)", "treatmentTreatment"),
   c("Estimate", "Std. Error")
 ]
-tabela_taxa_resp
+
+knitr::kable(tabela_md1a,
+             caption = "Tabela 1: Tabela de coeficientes da Taxa de Respostas com a variável Renda")
+
 ```
-<br> Segundo a tabela 23, no Apêndice G - Análise de Regressão - Taxa de Resposta, a renda não aparece entre as variáveis independentes do modelo. Essa é a razão da diferença entre os meus resultados da taxa de resposta para os presentes no artigo. Isso poderia indicar um viés, mas como podemos perceber, tanto pela regressão acima quanto pela predição abaixo, as diferenças entre ambas as respostas não são significativas:
+<br>
 
-<br> Para a predição de probabilidades, é necessário indicar os parâmetros de referência. Nos experimentos originais foram usados como padrão uma "mulher de 40 anos, moradora da cidade Guarujá, com ensino superior incompleto ou mais e avaliação “regular” do presidente Bolsonaro"(Avelino; Junior; Russo, 2022, p. 604). Contudo, os autores não indicaram qual o nível de renda parametrizado, mas seguindo a mesma lógica, podemos assumir que seria a renda com maior frequência, de Até 2 SM, como indicado no Apêndice C- Estatísticas Descritivas e Frequências do Estudo 1.
+### Modelo Original: sem renda
 
-```{r}
-moda_renda <- names(
-  sort(
-    table(xp_1_fltr$income_cat),
-    decreasing = TRUE
-  )
-)[1]
-
-persona <- data.frame(
-  female = rep('Mulher',2),
-  age=rep(40,2),
-  city=rep('Guarujá', 2),
-  educ_cat=rep('Superior incompleto ou mais', 2),
-  m1_cat=rep(3, 2),
-  treatment = c('Control', 'Treatment'),
-  income_cat = rep(moda_renda, 2)
-)
-
-pred_respondeu <- predict(
-  modelo_1,
-  newdata=persona,
-  type="response",
-  se.fit = TRUE
-)
-
-pred_respondeu
-```
-### Sem Renda entre as variáveis
-<br> Para reproduzir os resultados originais do estudo e confirmar que a omissão da renda não gera um viés, vou reproduzi-los abaixo e gerar a Tabela x: Comparação entre modelos com e sem renda.
-
+<br> A seguir está a reprodução daquele que acredita-se ser o modelo original do artigo, uma regressão logística multivariada, sem a renda dentre as variáveis independentes, o ``modelo_1b`:
 ```{r}
 modelo_1b <- glm(
   answered ~ treatment + city + educ_cat + age + female + m1_cat,
@@ -160,20 +138,9 @@ modelo_1b <- glm(
   family=binomial(link= "logit"))
 
 summary_md1b <- summary(modelo_1b)
-
-
-persona$income_cat<- NULL
-
-pred_md_1b <- predict(
-  modelo_1b,
-  newdata=persona,
-  type="response",
-  se.fit=TRUE,
-)
-
 ```
-#### Comparação de Resultados
-<br> Para comparar os resultados:
+
+<br> Caso haja significância na diferença entre os modelos `1a` e `1b`, isso indicaria um viés do modelo, portato, a seguir tem a Tabela 2, onde é possível observar comparativamente os coeficientes de ambos os modelos:
 ```{r}
 summary_md1b <-as.data.frame(summary_md1b$coefficients)
 summary_md1b <- round(summary_md1b, 3)
@@ -196,21 +163,66 @@ tabela_comp_taxa_resp <- rbind(
   "Tratamento – Com renda" = summary_md1a["treatmentTreatment", c("Estimate", "Std. Error", "Signif")]
 )
 
-
 knitr::kable(tabela_comp_taxa_resp,
-             caption = "Tabela x: Comparação entre estimandos e erros quadrados para os modelos com e sem renda")
+             caption = "Tabela 2: Tabela de coeficientes da Taxa de Respostas comparando modelos com e sem a variável Renda")
 ```
-<br> Apesar de os valores da minha reprodução serem diferentes aos do artigo, isso provavelmente se deve à adoção de alguma forma diferente para tratar os dados. Apesar disso, são valores que estão dentro da taxa de erros estabelecida no artigo. De forma parecida, a diferença entre os modelos com e sem renda também não é estatisticamente significativa, justificando a decisão dos persquisadores de não a utilizarem na regressão. Também é possível observar que nos quatro casos há alta significância, com um p valor inferior a 0.001.
+<br> Como é possível observar, não há diferenças significativas entre os modelos com e sem renda. Tanto que, em ambos os casos, podemos perceber o aumento das taxas de respostas após o tratamento, indicando que a hipótese dos autores pode estar correta e que o modelo não tem a omissão da renda como um viés.
 
-### Representação gráfica
+<br> É importante reforçar que, mesmo na minha reproduçõ da modelagem original, os valores não estão idênticos ao do artigo. Isso provavelmente se deve à adoção de alguma forma diferente para tratar e limpar os dados, mas que não têm significância estatística, sendo inclusive variações presentes dentro da taxa de erro estabelicida pelo artigo.
+
+<br>
+
+### Predições
+
+<br> Para a representação gráfica, os autores optaram pela predição de resposta para uma 'persona', com parâmetros de referência. Nos experimentos originais foram usados como padrão uma "mulher de 40 anos, moradora da cidade Guarujá, com ensino superior incompleto ou mais e avaliação “regular” do presidente Bolsonaro"(Avelino; Junior; Russo, 2022A, p. 604). Os parâmetros foram escolhidos por serem aqueles que apareceram com a maior frequência nos surveys.
+
+<br> Como não há nível de renda parametrizado, assumimos que seria a moda, "Até 2SM", cuja frequência também pode ser observada no "Apêndice C- Estatísticas Descritivas e Frequências do Estudo 1" (Avelino; Junior; Russo, 2022B, p. 7).
 
 ```{r}
-#calcular intervalo das predições
+#encontrar moda da renda
+moda_renda <- names(
+  sort(
+    table(xp_1_fltr$income_cat),
+    decreasing = TRUE
+  )
+)[1]
+
+#definir persona
+persona <- data.frame(
+  female = rep('Mulher',2),
+  age=rep(40,2),
+  city=rep('Guarujá', 2),
+  educ_cat=rep('Superior incompleto ou mais', 2),
+  m1_cat=rep(3, 2),
+  treatment = c('Control', 'Treatment'),
+  income_cat = rep(moda_renda, 2)
+)
+
+#Predição do modelo_1a: com renda
+pred_1a <- predict(
+  modelo_1a,
+  newdata=persona,
+  type="response",
+  se.fit = TRUE
+)
+
+#retirar renda de persona
+persona$income_cat<- NULL
+
+#Predição do modelo_1b: sem renda
+pred_md_1b <- predict(
+  modelo_1b,
+  newdata=persona,
+  type="response",
+  se.fit=TRUE,
+)
+
+#calcular intervalos das predições
 ic_1a <- data.frame(
   Condicao = c("Controle", "Tratamento"),
-  Porcentagem = pred_respondeu$fit * 100,
-  Inferior = (pred_respondeu$fit - 1.96 * pred_respondeu$se.fit) * 100,
-  Superior = (pred_respondeu$fit + 1.96 * pred_respondeu$se.fit) * 100
+  Porcentagem = pred_1a$fit * 100,
+  Inferior = (pred_1a$fit - 1.96 * pred_1a$se.fit) * 100,
+  Superior = (pred_1a$fit + 1.96 * pred_1a$se.fit) * 100
 )
 
 ic_1b <- data.frame(
@@ -220,8 +232,7 @@ ic_1b <- data.frame(
   Superior = (pred_md_1b$fit + 1.96 * pred_md_1b$se.fit) * 100
 )
 
-#gráfico
-
+#Representação Gráfica
 g1a <- ggplot() +
   geom_point(
     data = ic_1a,
@@ -236,7 +247,7 @@ g1a <- ggplot() +
   labs(
     x = "Condição",
     y = "Porcentagem (%)",
-    title = "Modelo com Renda"
+    title = "Gráficos 1 e 2: Comparação da Predição de taxa de Respostas para os Modelos"
   )
 
 g1b <- ggplot() +
@@ -253,16 +264,19 @@ g1b <- ggplot() +
   labs(
     x = "Condição",
     y = "Porcentagem (%)",
-    title = "Modelo sem Renda"
+    title = ""
   )
 
 g1a+g1b
 ```
+<br> O primeiro gráfico, à direita, é o que representa o Modelo com Renda, enquanto segundo gráfico, é o do Modelo Original. Assim como a comparação dos coeficientes deixa clara a diferença da taxa de respostas após o tratamento, aqui podemos ver isso em ambos os gráficos. Contudo, também é possível perceber o deslocamento de 10% a mais quando a renda não é uma variável do modelo. Apesar disso, as diferenças entre o grupo controle e tratamento permanence constantes.
 
-### Teste de Balanço
+<br>
 
-<br> Para garantir que a distribuição do tratamento seja mesmo aleatoriamente distribuída e que não tenha um viés, realizaremos um teste de balanço, que busca demonstrar se há ou não um padrão dentre os grupos controle e tratamento. Os resultados dos testes de balanço originais, podem ser encontrados no Apêndice E - Teste de balanço do estudo 1, na página 14 dos apêndices.
-  Percebe-se que nos testes de balanço originais, a avaliação do presidente não consta, mas acredito que, mesmo não sendo uma variável sociodemografica, é uma variável que pode influenciar fortemente, caso não esteja aleatoriamente distribuído entre grupos controle e tratamento, talvez não tanto para a regressão presente neste trabalho, mas especialmente nas que consideram a o posicionamento dos respondentes na escala esquerda-direita
+## Teste de Balanço
+
+<br> Os testes de balanço servem para garantir que hoouve realmente aleatorização na distribuição do tratamento. Para o artigo original, é possível consultar os testes de balanço no "Apêndice E - Teste de balanço do estudo 1" (Avelino; Junior; Russo, 2022B, p. 14), onde, porém, a avaliação do presidente (variável `m1_cat`) não consta. Mesmo não sendo uma variável sociodemográfica, neste trabalho optamos por adicioná-la ao teste de balanço, garantindo assim que ela não seja responsável por algum viés.
+
 ```{r}
 teste_balanco <- glm(
   treatment ~ city + income_cat + educ_cat + age + female + m1_cat,
@@ -286,33 +300,44 @@ balance_tabela <- balance_summary[
 ]
 
 knitr::kable(balance_tabela,
-             caption = "Tabela x+1: Teste de Balanço")
+             caption = "Tabela 3: Teste de Balanço")
 ```
-<br> Como idicado na tabela, nenhuma das variáveis têm significância, de forma que tenhamos, nem mesmo a categoria adicionada, que não acontece originalmente no apêndice do trabalho, a m1_cat, onde está armazenada as informações de avalaiação do então presidente Bolsonaro. Sendo assim, o teste de balanço demonstra que não há viés, ou padrão na distribuição das variaveis independentes entre os grupos controle e tratamento.
 
-### Análise de Resíduos
+<br> A Tabela 3, indica os coeficientes para o teste de balanço, incluindo uma coluna para apresentar a significância do p-valor, no caso, nenhuma variável tem significância estatística, nem mesmo `m1_cat`, a categoria adicionada, que representa a avaliação do presidente, indicando que não houve viés ou padrão na distribuição entre os grupos controle e tratamento.
 
-<br> A análise de resíduos tendem a não aparecer em trabalhos acadêmicos, mas são de suma importância para o pesquisador validar seu modelo. Os resíduos são possíveis influências que variáveis aleatórias exercem sobre o resultado dos modelos. Caso não haja padrão claro entre os resíduos, podemos assumir que essas variáveis são realmente aleatória. Contudo se observarmos um padrão nos resíduos, há uma forte indicação de que alguma variável foi ignorada e, portanto, o modelo tem um viés.
+<br>
 
-<br> Neste trabalho faremos apenas a checagem de resíduos para o modelo de Taxa de Respostas do trabalho original, ou seja, sem usar a renda como variável independente (o chamado de `modelo_1b`). Por ser um modelo de regressão logística, adotaremos os resíduos de Pearson:
+## Análise de Resíduos
+
+<br>A análise de resíduos tendem a não aparecer em trabalhos acadêmicos, mas são de suma importância para o pesquisador validar seu modelo. Os resíduos são possíveis influências que variáveis aleatórias, não observadas e não presentes no modelo, exercem sobre sua regressão. Os resíduos sempre estarão presentes, mas observá-los nos ajuda a entender se há, para além deles, alguma variável importante que foi negligenciada durante a modelagem, podendo gerar um viés.
+
+<br> Como a Taxa de resppostas é uma regressão logística, os resíduos se apresentam de forma um pouco diferente daqueles em casos de regressão linear. Neste trabalho faremos apenas a checagem de resíduos para o modelo de Taxa de Respostas do trabalho original, ou seja, sem usar a renda como variável independente (o `modelo_1b`). Também por ser um modelo de regressão logística, adotamos os resíduos de Pearson:
 ```{r}
 residuos <- modelo_1b %>%
   residuals(type="pearson")
 ``` 
-<br> Usando os resíduos de Pearson, podemos explorar os Gráficos quantil-quantil, que busca avaliar a normalidade dos resíduos.
+
+<br>
+
+### Gráficos Quantil-Quantil
+
+<br> Normalmente, se analisa os resíduos de uma regressão linear através dos gráficos quantil-quantil (QQ-plot), buscando observa a normalidade. Contudo, a normalidade dos resíduos não é um pressuposto das regressões logísticas. Ainda assim, é um padrão que se espera observar: que os resíduos estejam separados em grupos respectivos de valores positivos e negativos, relativos aos valores 1 e 0. 
+
 ```{r}
 ggplot(data=NULL, 
        aes(sample=residuos))+
   stat_qq(alpha=0.6,
-          color="deepskyblue",
-          size=2) +
-  stat_qq_line(color="hotpink",
-               size=1)+
-  labs(title = "Gráficos 2: QQ-PLOT - Normaliade dos Resíduos")
+          color="deepskyblue") +
+  stat_qq_line(color="hotpink")+
+  labs(title = "Gráfico 3: QQ-PLOT")
 ```
-<br> A normalidade dos resíduos não é um pressuposto das regressões logísticas, contudo é esperado que os resíduos estejam separados em grupos respectivos de valores positivos e negativos, relativos aos valores 1 e 0. Apesar de conseguirmos perceber alguns pontos afastadosno final de cada uma das curvas dos resíduos, eles representam um bom padrão para regressões logísticas, enquanto a maior inclinação da curva respectiva a 0, demonstra que o modelo tem permite maior segurança ao prever as resposta positivas (1).
+<br> Enquanto a reta inclinada rosa representa a normalidade, as bolinhas azuis são os resíduos. Em uma regressão linear, o esperado seria que os resíduos se sobrepusessem à linha, mas aqui apenas precisamos observar se há extremos. Conseguimos perceber alguns pontos afastados no final de cada uma das curvas dos resíduos, mas ainda assim eles se distribuem em um bom padrão para regressões logísticas. Já a maior inclinação da curva no quatil negativo, respresentante de 0, demonstra que o modelo permite maior segurança ao prever as resposta positivas (1).
 
-<br> Para a segunda parte da análise, bsucaremos checar a homocedasticidade dos resíduos. Isto é, se há uma distribuição homogênea desses resíduos. Para isso, checamos a constância da variância, a partir de um gráfico dos resíduos quadrados em comparação os valores ajustados, representados pela reta do gráfico:
+<br>
+
+### Análise de Homocedasticidade
+
+<br> Para a segunda parte da análise, bsucaremos checar a homocedasticidade dos resíduos. Isto é, a constância da variância, a partir de um gráfico dos resíduos quadrados em comparação os valores ajustados:
 ```{r}
 residuos2 <-residuos^2
 ajustados <- fitted(modelo_1b)
@@ -329,11 +354,29 @@ df_homocedast <- data.frame(
     geom_hline(yintercept = mean(df_homocedast$residuos2),
                color="hotpink")+
     labs(
-      title = "Resíduos² vs valores ajustados"
+      title = "Gráfico 4: Homocedasticidade - Resíduos² vs valores ajustados"
     ) +
     theme_minimal()
 
 ```
-<br> No caso das regressões logísticas, por serem variáveis binárias, a homocedasticidade esperada nos resíduos é diferente da de outras regressões: é necessário que haja homogeneidade na distribuição dos resíduos acima e abaixo da média (dos valores ajustados). E é isso que podemos observar no gráfico 2. 
+<br> Enquanto os pontos azuis novamente indicam os resíduos, a linha rosa aqui é referente aos valores ajustados. Em uma regressão linear, os pontinhos deveriam estar espalhados pelo gráfico, sem apresentar qualquer padrão, mas no caso das regressões logísticas, por serem variáveis binárias, a homocedasticidade esperada nos resíduos se expressa diferentemente: é necessário que haja homogeneidade na distribuição dos resíduos acima e abaixo da média (dos valores ajustados), o que podemos obeservar no gráfico 4. 
 
-<br> Concluindo: apesar daquilo que poderiam ser consideradas falhas encontradas no artigo, como a omissão da avaliação do presidente nos testes de balanço, ou da renda como uma variável independente da regressão logística, as análises estatísticas e residuais confirmam que o modelo é válido e significante.
+<br>
+
+## Conclusão
+
+<br> Neste trabalho foi reproduzido a Taxa de Respostas para o Experimento 1 do artigo. Nela, busca-se evidenciar uma relação de causalidade inversa entre informar a respondentes a posição ideológica do então presidente bolsonaro, e a decisão desses respondentes sobre se autoposicionarem numa escala esquerda-direita ou não. Por ser uma variável dependente binária (respondeu = 1, não respondeu = 0), não é possível fazer uma regressão linear, mas sim uma regressão logística, multivariada, por ter como variáveis independentes, além do tratamento, uma série de informações sociodemográficas.
+
+<br> A primeira questão apresentada foi a falta da variável independente 'renda' durante a modelagem da regressão, e portanto, neste trabalho foram comparados duas versões do modelo, uma com e outra sem a renda. Contudo, não houve diferenças significativas entre os dois modelos, justificando a opção dos autores de deixar a variável de fora. 
+
+<br> Da mesma forma, não foi identificado nenhuma anormalidade no teste de balanço ou nos resíduos, nem mesmo quando adicionamos variáveis que os autores originais ignoravam. Dessa forma, podemos confirmar que, ao menos no que tange a Taxa de Respostas para o Eperimento 1, a modelagem é extremamente consistente e a hipótese dos autores é válida e pôde ser demonstrada a partir das análises estatísticas. 
+
+<br> 
+
+## Bibliografia
+
+<br>  AVELINO, G.; JUNIOR, P.; RUSSO, G. A. *O crescimento da direita e o voto em Bolsonaro: causalidade reversa?* OPINIÃO PÚBLICA, Campinas, vol. 28, nº 3, p. 594-614, set.-dez., 2022A
+
+<br>  AVELINO, G.; JUNIOR, P.; RUSSO, G. A. *O Crescimento da Direita e Voto em Bolsonaro: Apêndice de Informação Suplementar*: 2022B
+
+<br> PS.: Para o desenvolvimento deste trabalho houve o auxílio de ferramentas de IA da OpenAI (Chat GPT) e DeepSeek. o auxílio foi utilizado de forma complementar apenas, para revisão, compreensão de códigos complexos e discussão de interpretações estatísticas.
