@@ -290,5 +290,50 @@ knitr::kable(balance_tabela,
 ```
 <br> Como idicado na tabela, nenhuma das variáveis têm significância, de forma que tenhamos, nem mesmo a categoria adicionada, que não acontece originalmente no apêndice do trabalho, a m1_cat, onde está armazenada as informações de avalaiação do então presidente Bolsonaro. Sendo assim, o teste de balanço demonstra que não há viés, ou padrão na distribuição das variaveis independentes entre os grupos controle e tratamento.
 
+### Análise de Resíduos
 
+<br> A análise de resíduos tendem a não aparecer em trabalhos acadêmicos, mas são de suma importância para o pesquisador validar seu modelo. Os resíduos são possíveis influências que variáveis aleatórias exercem sobre o resultado dos modelos. Caso não haja padrão claro entre os resíduos, podemos assumir que essas variáveis são realmente aleatória. Contudo se observarmos um padrão nos resíduos, há uma forte indicação de que alguma variável foi ignorada e, portanto, o modelo tem um viés.
 
+<br> Neste trabalho faremos apenas a checagem de resíduos para o modelo de Taxa de Respostas do trabalho original, ou seja, sem usar a renda como variável independente (o chamado de `modelo_1b`). Por ser um modelo de regressão logística, adotaremos os resíduos de Pearson:
+```{r}
+residuos <- modelo_1b %>%
+  residuals(type="pearson")
+``` 
+<br> Usando os resíduos de Pearson, podemos explorar os Gráficos quantil-quantil, que busca avaliar a normalidade dos resíduos.
+```{r}
+ggplot(data=NULL, 
+       aes(sample=residuos))+
+  stat_qq(alpha=0.6,
+          color="deepskyblue",
+          size=2) +
+  stat_qq_line(color="hotpink",
+               size=1)+
+  labs(title = "Gráficos 2: QQ-PLOT - Normaliade dos Resíduos")
+```
+<br> A normalidade dos resíduos não é um pressuposto das regressões logísticas, contudo é esperado que os resíduos estejam separados em grupos respectivos de valores positivos e negativos, relativos aos valores 1 e 0. Apesar de conseguirmos perceber alguns pontos afastadosno final de cada uma das curvas dos resíduos, eles representam um bom padrão para regressões logísticas, enquanto a maior inclinação da curva respectiva a 0, demonstra que o modelo tem permite maior segurança ao prever as resposta positivas (1).
+
+<br> Para a segunda parte da análise, bsucaremos checar a homocedasticidade dos resíduos. Isto é, se há uma distribuição homogênea desses resíduos. Para isso, checamos a constância da variância, a partir de um gráfico dos resíduos quadrados em comparação os valores ajustados, representados pela reta do gráfico:
+```{r}
+residuos2 <-residuos^2
+ajustados <- fitted(modelo_1b)
+
+df_homocedast <- data.frame(
+  ajustados = ajustados,
+  residuos2 = residuos2
+)
+  
+  ggplot(df_homocedast, 
+         aes(x = ajustados, y = residuos2)) +
+    geom_point(alpha=0.5,
+               color="deepskyblue") +
+    geom_hline(yintercept = mean(df_homocedast$residuos2),
+               color="hotpink")+
+    labs(
+      title = "Resíduos² vs valores ajustados"
+    ) +
+    theme_minimal()
+
+```
+<br> No caso das regressões logísticas, por serem variáveis binárias, a homocedasticidade esperada nos resíduos é diferente da de outras regressões: é necessário que haja homogeneidade na distribuição dos resíduos acima e abaixo da média (dos valores ajustados). E é isso que podemos observar no gráfico 2. 
+
+<br> Concluindo: apesar daquilo que poderiam ser consideradas falhas encontradas no artigo, como a omissão da avaliação do presidente nos testes de balanço, ou da renda como uma variável independente da regressão logística, as análises estatísticas e residuais confirmam que o modelo é válido e significante.
